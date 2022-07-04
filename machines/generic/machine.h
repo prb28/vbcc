@@ -129,7 +129,7 @@ struct reg_handle{
 #undef HAVE_EXT_IC
 
 /* we do not use unsigned int as size_t (but unsigned long, the default) */
-#undef HAVE_INT_SIZET
+#define HAVE_INT_SIZET 1
 
 /* we do not need register-pairs */
 #undef HAVE_REGPAIRS
@@ -146,3 +146,6 @@ struct reg_handle{
 
 /* do not create CONVERT_ICs from unsigned integers to floats */
 #define AVOID_UNSIGNED_TO_FLOAT 1
+
+/* convert multiplications/division by powers of two to shifts */
+#define HAVE_POF2OPT 1

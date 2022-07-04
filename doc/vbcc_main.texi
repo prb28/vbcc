@@ -85,8 +85,10 @@ or additional options.
                 be specified using this command. This may be useful for
                 very long command lines.
 
+    @item -c89
     @item -c99
-                Switch to the 1999 ISO standard for C /ISO/IEC9899:1999).
+                Set the C standard to be used.
+                The default is the 1999 ISO C standard (ISO/IEC9899:1999).
                 Currently the following changes of C99 are handled:
 @itemize @minus
                 @item long long int (not supported by all backends)
@@ -223,6 +225,9 @@ or additional options.
     @item -no-cpp-warn
                 Turn off all preprocessor warnings.
 
+    @item -warnings-as-errors
+                Treat all enabled warnings as errors.
+
     @item -strip-path
                 Strip the path of filenames from error messages.
                 Error messages may look more convenient that
@@ -251,6 +256,10 @@ or additional options.
                 included using the syntax @code{#include <...>}. Specify this option
                 to add those files as well.
 
+    @item -depobj=<file>
+                Use the specified filename as target in the generated dependency
+                file instead of basing it on the input file name.
+
     @item -reserve-reg=<register>
                 Reserve that register not to be used by the backend.
                 This option is dangerous and must only be used for registers
@@ -268,6 +277,52 @@ or additional options.
                 memory, though. This options tells @command{vbcc} to
                 keep as little of this data in memory as possible.
                 This has not yet been tested very well.
+
+    @item -prefer-statics
+                Assign auto variables to static memory rather than the stack if it
+                can be deduced that the function is not called recursively, i.e. the
+                behaviour is still C compliant. This may be more efficient on targets
+                that can access static data faster than stack. While stack-usage is
+                reduced, total memory consumption is usually increased.
+
+                Functions will not be re-entrant any more.
+
+                This option only has effect on higher optimization levels (@code{-O3}).
+
+    @item -force-statics
+                Like @code{-prefer-statics}, but assume all functions as non-recursive.
+                This will break C compliance.
+
+                This option only has effect on higher optimization levels (@code{-O}).
+
+    @item -range-opt
+                Perform additional optimizations based on value range analysis. This
+                option is under development and considered experimental. The following
+                optimizations are currently implemented:
+
+                @itemize @minus
+                @item Induction variables of some loops are transformed to smaller
+                      types if it can be determined that they will only get assigned
+                      values that fit into a smaller type.
+                @end itemize
+
+    @item -merge-strings
+                Overlay identical string-constants to save memory. Currently
+                only strings identical to string-constants on top-level are
+                recognized.
+
+    @item -sec-per-obj
+                Tells the backend to put every function/object into its own
+                separate section. This allows more fine-grained elimination
+                of unused functions/objects by the linker. On the other hand,
+                it may prevent some optimizations by the assembler.
+
+                This option only has effect if it is supported by the backend.
+
+    @item -mask-opt
+                Perform mask optimizations on suitable library function. This
+                will create calls to optimized versions of e.g. the printf/scanf
+                family of functions.
 
 @end table
 
@@ -1763,7 +1818,7 @@ external linkage
 which are modified by the function. @code{__varsused} is similar, but
 specifies the external variables read by the function. If a variable is
 read and written, both attributes have to be specified. The variable-list
-ist a list of identifiers, separated by slashes and enclosed in double
+is a list of identifiers, separated by slashes and enclosed in double
 quotes.
 
 The attribute @code{__writesmem(<type>)} is used to specify that the
@@ -1828,6 +1883,36 @@ The following macros are defined by the compiler.
 @end example
 @code{__STDC_VERSION__} is defined in C99-mode only.
 
+@subsection Masked symbols
+Together with vlink, this feature allows to provide a family of specially tailored
+functions in a library.
+
+A symbol can be attached a mask using the @code{__mask} attribute, e.g.
+
+@example
+  __mask(15) void myfunc(void);
+@end example
+
+The symbol of this function will get the suffix @code{.15} attached.
+
+A reference to a masked symbol can either be created by vbcc itself when using the
+option @code{-mask-opt}, or manually by referencing a symbol prefixed with
+@code{__maskm_<mask>}.
+
+@example
+ extern __mask(15) void myfunc(void);
+ ...
+   __maskm_15_myfunc();
+@end example
+
+If there are several masked references to a symbol, the linker will pull the first
+symbol containing a mask that has at least all bits set that are set in any masked
+reference. If no masked symbols matching that requirement are available, the symbol
+without a mask is used. Also, a non-masked reference will only pull a non-masked
+symbol from a library.
+
+Masked objects may only be defined in libraries and zero masks are not allowed.
+
 
 @section Known Problems
 
@@ -1839,7 +1924,7 @@ The following macros are defined by the compiler.
 
     @item Debugging-infos may have problems on higher optimization-levels.
 
-    @item String-constants are not merged.
+    @item String-constants are not merged (partially done).
 
 @end itemize
 

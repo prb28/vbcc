@@ -1,4 +1,4 @@
-/*  $VER: vbcc (vbc.h) $Revision: 1.16 $    */
+/*  $VER: vbcc (vbc.h) $Revision: 1.23 $    */
 
 #include "supp.h"
 
@@ -48,6 +48,8 @@ extern struct tunit *first_tunit,*last_tunit;
 extern type *arith_typ(type*,type *);
 extern void insert_constn(np);
 extern int int_erw(int);
+extern type *andcomp(np,np);
+extern void simple_alg_opt(np);
 extern int type_expression(np,type *),
   compatible_types(type *,type *,int),
   compare_sd(struct struct_declaration *,struct struct_declaration *);
@@ -112,11 +114,15 @@ extern struct Var *find_var(char *,int);
 extern struct Var *find_ext_var(char *);
 extern struct Var *add_var(char *,type *,int,struct const_list *);
 extern void fi_from_attr(struct Var *);
+extern void needs(char *s);
+
 
 extern int usz;
 
 extern int c99;
 extern int opencl;
+extern int merge_strings;
+extern int mask_opt;
 extern int disallow_statics;
 extern int header_cnt;
 extern int softfloat;
@@ -132,6 +138,7 @@ typedef struct regargs_list{
   struct argument_list *al;
   int reg;
   struct Var *v;
+  int rsaved;
 } regargs_list;
 #ifdef HAVE_REGPARMS
 extern zmax push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **,struct reg_handle *,struct obj *,type *,int,type *);
@@ -185,7 +192,7 @@ extern void scratch_var(struct obj *,int,type *);
 extern void get_scratch(struct obj *,int,int,type *);
 extern void gen_cond(struct obj *,int,int,int);
 
-#define MAXCF 60
+#define MAXCF 70
 extern int c_flags[MAXCF];
 extern char *c_flags_name[MAXCF];
 extern union ppi c_flags_val[MAXCF];
@@ -256,6 +263,7 @@ extern int errors;
 
 extern int float_used;
 extern char *cur_func;
+extern Var *cur_funcv;
 extern int line;
 extern void free_clist(struct const_list *);
 extern struct const_list *first_clist,*last_clist;
